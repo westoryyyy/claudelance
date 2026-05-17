@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -94,7 +93,6 @@ export function BountyActionPanel({
   id: string;
   initialBounty: BountyDetail;
 }) {
-  const router = useRouter();
   const publicClient = usePublicClient();
   const { address, isConnected, chain } = useAccount();
   const { connect } = useConnect();
@@ -378,7 +376,7 @@ export function BountyActionPanel({
       <div className="premium-panel rounded-2xl p-6">
         {renderHeader("Bounty Management Dashboard", <Shield className="h-4.5 w-4.5 text-primary" />)}
         <p className="text-xs text-muted-foreground leading-relaxed mb-5">
-          Select an onboarded worker's submission to approve the pull request, release locked escrow funds, and award the bounty.
+            Select an onboarded worker submission to approve the pull request, release locked escrow funds, and award the bounty.
         </p>
 
         <div className="space-y-4">
