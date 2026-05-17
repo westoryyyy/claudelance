@@ -3,8 +3,9 @@ import { createPublicClient, http, type Address } from "viem";
 import { BountyStatus, MAINNET, SEPOLIA, type Deployment } from "@yeheskieltame/claudelance-types";
 
 import { celoMainnet, celoSepolia } from "@/lib/chain";
+import { tokenToUsd } from "@/lib/usd-conversion";
 
-export const revalidate = 30;
+export const revalidate = 15;
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -57,6 +58,7 @@ const corsHeaders = {
 
 type StatusFilter = "open" | "resolved";
 type TokenFilter = "cusd" | "celo" | "usdc";
+type SortOrder = "newest" | "oldest";
 
 type ChainBounty = {
   poster: Address;
@@ -99,8 +101,55 @@ export async function GET(request: NextRequest) {
   });
 
   const items: ReturnType<typeof toJsonBounty>[] = [];
-  let nextId = parsed.cursor;
+  // For oldest sort we start from cursor 1 ascending (default).
+  // For newest sort we start from the highest id and work backward.
+  let nextId = parsed.sort === "newest" && !parsed.cursor
+    ? totalCount
+    : parsed.cursor;
 
+  if (parsed.sort === "newest") {
+    // Paginate descending: start from totalCount down to 1.
+    let cursor = nextId;
+    while (cursor >= 1n && items.length < parsed.limit) {
+      const batchSize = Number(minBigInt(BigInt(BATCH_SIZE), cursor));
+      const ids = Array.from({ length: batchSize }, (_, i) => cursor - BigInt(i));
+
+      const results = await client.multicall({
+        allowFailure: true,
+        contracts: ids.map((id) => ({
+          address: deployment.core,
+          abi: bountiesApiAbi,
+          functionName: "getBounty",
+          args: [id],
+        })),
+      });
+
+      for (const [index, result] of results.entries()) {
+        if (result.status !== "success") continue;
+        const id = ids[index];
+        if (!id) continue;
+        const bounty = normalizeBounty(result.result);
+        if (!matchesStatus(bounty, parsed.status)) continue;
+        if (!matchesToken(bounty, parsed.token, deployment)) continue;
+        if (!matchesPoster(bounty, parsed.poster)) continue;
+        items.push(toJsonBounty(id, bounty, deployment));
+        if (items.length >= parsed.limit) break;
+      }
+
+      cursor -= BigInt(batchSize);
+    }
+
+    return NextResponse.json(
+      {
+        items,
+        nextCursor: cursor >= 1n && items.length >= parsed.limit ? cursor.toString() : null,
+        total: Number(totalCount),
+      },
+      { headers: corsHeaders },
+    );
+  }
+
+  // Default: ascending (oldest first)
   while (nextId <= totalCount && items.length < parsed.limit) {
     const batchSize = Number(minBigInt(BigInt(BATCH_SIZE), totalCount - nextId + 1n));
     const ids = Array.from({ length: batchSize }, (_, index) => nextId + BigInt(index));
@@ -125,8 +174,9 @@ export async function GET(request: NextRequest) {
       const bounty = normalizeBounty(result.result);
       if (!matchesStatus(bounty, parsed.status)) continue;
       if (!matchesToken(bounty, parsed.token, deployment)) continue;
+      if (!matchesPoster(bounty, parsed.poster)) continue;
 
-      items.push(toJsonBounty(id, bounty));
+      items.push(toJsonBounty(id, bounty, deployment));
       if (items.length >= parsed.limit) {
         nextPageCursor = id + 1n;
         break;
@@ -155,6 +205,8 @@ function parseQuery(searchParams: URLSearchParams):
   | {
       status?: StatusFilter;
       token?: TokenFilter;
+      poster?: string;
+      sort: SortOrder;
       limit: number;
       cursor: bigint;
     }
@@ -168,6 +220,17 @@ function parseQuery(searchParams: URLSearchParams):
   if (token && token !== "cusd" && token !== "celo" && token !== "usdc") {
     return { error: "token must be cusd, celo, or usdc" };
   }
+
+  const poster = searchParams.get("poster")?.toLowerCase() ?? undefined;
+  if (poster && !/^0x[0-9a-f]{40}$/i.test(poster)) {
+    return { error: "poster must be a valid Ethereum address" };
+  }
+
+  const sortRaw = searchParams.get("sort")?.toLowerCase();
+  if (sortRaw && sortRaw !== "newest" && sortRaw !== "oldest") {
+    return { error: "sort must be newest or oldest" };
+  }
+  const sort: SortOrder = (sortRaw as SortOrder) ?? "oldest";
 
   const limitRaw = searchParams.get("limit");
   const limit = limitRaw ? Number(limitRaw) : DEFAULT_LIMIT;
@@ -189,6 +252,8 @@ function parseQuery(searchParams: URLSearchParams):
   return {
     status: status as StatusFilter | undefined,
     token: token as TokenFilter | undefined,
+    poster,
+    sort,
     limit,
     cursor,
   };
@@ -221,15 +286,38 @@ function matchesToken(bounty: ChainBounty, token: TokenFilter | undefined, deplo
   return bounty.token.toLowerCase() === tokenAddress.toLowerCase();
 }
 
-function toJsonBounty(id: bigint, bounty: ChainBounty) {
+function matchesPoster(bounty: ChainBounty, poster?: string) {
+  if (!poster) return true;
+  return bounty.poster.toLowerCase() === poster.toLowerCase();
+}
+
+function resolveTokenSymbol(tokenAddress: string, deployment: Deployment): "cUSD" | "CELO" | "USDC" {
+  const addr = tokenAddress.toLowerCase();
+  if (addr === deployment.tokens.cUSD.toLowerCase()) return "cUSD";
+  if (addr === deployment.tokens.CELO.toLowerCase()) return "CELO";
+  return "USDC";
+}
+
+function toJsonBounty(id: bigint, bounty: ChainBounty, deployment?: Deployment) {
+  const tokenSymbol = deployment ? resolveTokenSymbol(bounty.token, deployment) : "cUSD";
+  const amountUsd = deployment
+    ? tokenToUsd(tokenSymbol, bounty.amount)
+    : 0;
+  const isExpired = bounty.deadline > 0n && BigInt(Math.floor(Date.now() / 1000)) > bounty.deadline;
+  const slotsRemaining = Math.max(0, bounty.maxSlots - bounty.claimedSlots);
+
   return {
     id: id.toString(),
     poster: bounty.poster,
     amount: bounty.amount.toString(),
+    amountUsd: Number(amountUsd.toFixed(4)),
+    tokenSymbol,
     winner: bounty.winner,
     stakeRequired: bounty.stakeRequired.toString(),
     token: bounty.token,
     deadline: bounty.deadline.toString(),
+    isExpired,
+    slotsRemaining,
     maxSlots: Number(bounty.maxSlots),
     claimedSlots: Number(bounty.claimedSlots),
     bountyType: Number(bounty.bountyType),

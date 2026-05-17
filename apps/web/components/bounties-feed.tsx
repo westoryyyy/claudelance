@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Coins, ExternalLink, GitPullRequest, Loader2 } from "lucide-react";
+import { ArrowRight, CalendarClock, ExternalLink, GitPullRequest, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getTokenMeta } from "@/lib/token-meta";
 
 type BountyStatus = "open" | "resolved" | "cancelled" | "expired";
 type TokenFilter = "cusd" | "celo" | "usdc";
@@ -45,9 +46,9 @@ const FILTERS: Array<{ label: string; value: FilterValue }> = [
 ];
 
 const TOKEN_STYLES: Record<string, string> = {
-  cusd: "bg-emerald-500/12 text-emerald-700 ring-emerald-500/25 dark:text-emerald-300",
+  cusd: "bg-slate-500/10 text-slate-700 ring-slate-500/25 dark:text-slate-200",
   celo: "bg-amber-400/15 text-amber-800 ring-amber-400/30 dark:text-amber-200",
-  usdc: "bg-sky-500/12 text-sky-700 ring-sky-500/25 dark:text-sky-300",
+  usdc: "bg-blue-500/10 text-blue-700 ring-blue-500/25 dark:text-blue-300",
 };
 
 export function BountiesFeed() {
@@ -121,7 +122,7 @@ export function BountiesFeed() {
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-24 pt-10 sm:pt-14">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-medium text-primary">Open marketplace</p>
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">Open marketplace</p>
           <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight sm:text-5xl">
             Browse bounties
           </h1>
@@ -147,7 +148,7 @@ export function BountiesFeed() {
               "min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition",
               activeFilter === filter.value
                 ? "border-primary bg-primary text-primary-foreground shadow-glow"
-                : "border-border bg-card/70 text-muted-foreground hover:text-foreground",
+                : "border-border bg-card/70 text-muted-foreground backdrop-blur hover:text-foreground",
             )}
           >
             {filter.label}
@@ -185,24 +186,37 @@ export function BountiesFeed() {
 }
 
 function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
-  const token = normalizeToken(bounty);
+  const tokenSymbol = normalizeToken(bounty);
+  const tokenMeta = getTokenMeta(tokenSymbol);
   const status = normalizeStatus(bounty.status);
   const deadline = formatDeadline(bounty.deadline);
   const amount = formatAmount(bounty.amount);
   const title = bounty.title ?? deriveTitle(bounty);
   const description = bounty.description ?? bounty.instructionUrl ?? "Review the linked issue for full acceptance criteria.";
-  const href = bounty.instructionUrl ?? bounty.targetRepoUrl ?? `/bounty/${bounty.id ?? ""}`;
+  const internalHref = `/bounty/${bounty.id ?? ""}`;
+  const issueHref = bounty.instructionUrl ?? bounty.targetRepoUrl;
 
   return (
-    <article className="group flex min-h-64 flex-col rounded-2xl border border-border bg-card/80 p-5 shadow-sm backdrop-blur transition motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-glass">
+    <article className="premium-panel group flex min-h-64 flex-col rounded-2xl p-5 transition motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-glass">
       <div className="flex items-start justify-between gap-3">
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1", TOKEN_STYLES[token.toLowerCase()] ?? "bg-muted text-muted-foreground ring-border")}>
-          <Coins className="h-3.5 w-3.5" />
-          {token}
+        <span className={cn(
+          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+          `${tokenMeta.bgColor} ${tokenMeta.textColor}`,
+          tokenSymbol === "cUSD" ? "ring-slate-500/25" : tokenSymbol === "CELO" ? "ring-amber-400/30" : "ring-blue-500/25"
+        )}>
+          <img
+            src={tokenMeta.logoUrl}
+            alt={tokenSymbol}
+            width={14}
+            height={14}
+            className="rounded-full object-cover"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+          {tokenSymbol}
         </span>
         <span className={cn(
           "rounded-full px-2.5 py-1 text-xs font-medium",
-          status === "resolved" ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-300" : "bg-primary/10 text-primary",
+          status === "resolved" ? "bg-slate-500/10 text-slate-600 dark:text-slate-300" : "bg-primary/10 text-primary",
         )}>
           {capitalize(status)}
         </span>
@@ -217,8 +231,8 @@ function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
 
       <div className="mt-5 grid gap-2 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <Coins className="h-4 w-4 text-foreground" />
-          {amount} {token}
+          <img src={tokenMeta.logoUrl} alt="" width={16} height={16} className="rounded-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          {amount} {tokenSymbol}
         </span>
         <span className="inline-flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-foreground" />
@@ -230,20 +244,33 @@ function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
         </span>
       </div>
 
-      <Link
-        href={href}
-        className="mt-auto inline-flex min-h-11 items-center justify-between gap-2 pt-5 text-sm font-medium text-primary"
-      >
-        View bounty
-        <ExternalLink className="h-4 w-4 transition group-hover:translate-x-0.5" />
-      </Link>
+      <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+        <Link
+          href={internalHref}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition hover:underline"
+        >
+          View bounty
+          <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        </Link>
+        {issueHref && (
+          <a
+            href={issueHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground transition hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Issue
+          </a>
+        )}
+      </div>
     </article>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card/70 p-8 text-center">
+    <div className="premium-panel rounded-2xl border-dashed p-8 text-center">
       <p className="text-sm text-muted-foreground">{message}</p>
       <Button asChild variant="secondary" className="mt-4">
         <Link href="/post">Post a bounty</Link>
