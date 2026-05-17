@@ -139,7 +139,16 @@ contract ClaudelanceCoreTest is Test {
         vm.expectRevert();
         vm.prank(poster);
         core.postBounty(
-            _cusd(), 0, "github.com/x/y", "github.com/x/y/issues/1", bytes32(0), AMOUNT, MAX_SLOTS, STAKE, DEADLINE, true
+            _cusd(),
+            0,
+            "github.com/x/y",
+            "github.com/x/y/issues/1",
+            bytes32(0),
+            AMOUNT,
+            MAX_SLOTS,
+            STAKE,
+            DEADLINE,
+            true
         );
     }
 
@@ -179,18 +188,7 @@ contract ClaudelanceCoreTest is Test {
 
         vm.expectRevert(ClaudelanceCore.TokenNotAllowed.selector);
         vm.prank(poster);
-        core.postBounty(
-            IERC20(address(random)),
-            0,
-            "x",
-            "x",
-            bytes32(0),
-            AMOUNT,
-            MAX_SLOTS,
-            STAKE,
-            DEADLINE,
-            true
-        );
+        core.postBounty(IERC20(address(random)), 0, "x", "x", bytes32(0), AMOUNT, MAX_SLOTS, STAKE, DEADLINE, true);
     }
 
     function test_ClaimSlot_LocksStakeAndIncrements() public {
@@ -990,16 +988,7 @@ contract ClaudelanceCoreTest is Test {
         bytes32 reqHash = keccak256("hash");
         vm.expectEmit(true, true, true, true);
         emit IClaudelanceCore.BountyPosted(
-            1,
-            poster,
-            address(cusd),
-            address(0),
-            0,
-            AMOUNT,
-            STAKE,
-            MAX_SLOTS,
-            "github.com/employer/repo",
-            reqHash
+            1, poster, address(cusd), address(0), 0, AMOUNT, STAKE, MAX_SLOTS, "github.com/employer/repo", reqHash
         );
 
         vm.prank(poster);
@@ -1211,15 +1200,7 @@ contract ClaudelanceCoreTest is Test {
     function test_PostDirectHire_OnlyTargetCanClaim() public {
         vm.prank(poster);
         uint256 id = core.postDirectHire(
-            _cusd(),
-            w1,
-            0,
-            "github.com/x/y",
-            "github.com/x/y/issues/1",
-            bytes32(0),
-            AMOUNT,
-            STAKE,
-            DEADLINE
+            _cusd(), w1, 0, "github.com/x/y", "github.com/x/y/issues/1", bytes32(0), AMOUNT, STAKE, DEADLINE
         );
 
         IClaudelanceCore.Bounty memory b = core.getBounty(id);
@@ -1238,9 +1219,7 @@ contract ClaudelanceCoreTest is Test {
     function test_PostDirectHire_RevertsOnZeroTarget() public {
         vm.expectRevert(ClaudelanceCore.InvalidAddress.selector);
         vm.prank(poster);
-        core.postDirectHire(
-            _cusd(), address(0), 0, "x", "x", bytes32(0), AMOUNT, STAKE, DEADLINE
-        );
+        core.postDirectHire(_cusd(), address(0), 0, "x", "x", bytes32(0), AMOUNT, STAKE, DEADLINE);
     }
 
     function test_PostDirectHire_RevertsOnZeroStake() public {
@@ -1252,26 +1231,18 @@ contract ClaudelanceCoreTest is Test {
     function test_PostDirectHire_EmitsTargetInEvent() public {
         bytes32 reqHash = keccak256("dh");
         vm.expectEmit(true, true, true, true);
-        emit IClaudelanceCore.BountyPosted(
-            1, poster, address(cusd), w1, 0, AMOUNT, STAKE, 1, "github.com/x/y", reqHash
-        );
+        emit IClaudelanceCore.BountyPosted(1, poster, address(cusd), w1, 0, AMOUNT, STAKE, 1, "github.com/x/y", reqHash);
 
         vm.prank(poster);
-        core.postDirectHire(_cusd(), w1, 0, "github.com/x/y", "github.com/x/y/issues/1", reqHash, AMOUNT, STAKE, DEADLINE);
+        core.postDirectHire(
+            _cusd(), w1, 0, "github.com/x/y", "github.com/x/y/issues/1", reqHash, AMOUNT, STAKE, DEADLINE
+        );
     }
 
     function test_PostDirectHire_E2EFlow() public {
         vm.prank(poster);
         uint256 id = core.postDirectHire(
-            _cusd(),
-            w1,
-            0,
-            "github.com/x/y",
-            "github.com/x/y/issues/1",
-            bytes32(0),
-            AMOUNT,
-            STAKE,
-            DEADLINE
+            _cusd(), w1, 0, "github.com/x/y", "github.com/x/y/issues/1", bytes32(0), AMOUNT, STAKE, DEADLINE
         );
         _claim(id, w1);
         vm.prank(w1);

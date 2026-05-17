@@ -64,9 +64,9 @@ contract SeedSepoliaV2 is Script {
         _workersWithdraw();
 
         console2.log("=== SeedSepoliaV2 done ===");
-        (uint256 volCusd,,,, ) = core.getStats(IERC20(address(cusd)));
-        (uint256 volCelo,,,, ) = core.getStats(IERC20(address(celo)));
-        (uint256 volUsdc,,,, ) = core.getStats(IERC20(address(usdc)));
+        (uint256 volCusd,,,,) = core.getStats(IERC20(address(cusd)));
+        (uint256 volCelo,,,,) = core.getStats(IERC20(address(celo)));
+        (uint256 volUsdc,,,,) = core.getStats(IERC20(address(usdc)));
         console2.log("totalBountyVolume cUSD:", volCusd);
         console2.log("totalBountyVolume CELO:", volCelo);
         console2.log("totalBountyVolume USDC:", volUsdc);
@@ -130,34 +130,88 @@ contract SeedSepoliaV2 is Script {
 
         // 5 open marketplace bounties — vary token, amount, slots, ci off
         ids[0] = core.postBounty(
-            IERC20(address(cusd)), 0, repo, "github.com/yeheskieltame/claudelance/issues/100",
-            bytes32(0), 1e18, 3, 0.05e18, 1 days, false
+            IERC20(address(cusd)),
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/100",
+            bytes32(0),
+            1e18,
+            3,
+            0.05e18,
+            1 days,
+            false
         );
         ids[1] = core.postBounty(
-            IERC20(address(celo)), 0, repo, "github.com/yeheskieltame/claudelance/issues/101",
-            bytes32(0), 2e18, 2, 0.1e18, 1 days, false
+            IERC20(address(celo)),
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/101",
+            bytes32(0),
+            2e18,
+            2,
+            0.1e18,
+            1 days,
+            false
         );
         ids[2] = core.postBounty(
-            IERC20(address(usdc)), 0, repo, "github.com/yeheskieltame/claudelance/issues/102",
-            bytes32(0), 1e6, 2, 0.05e6, 1 days, false
+            IERC20(address(usdc)),
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/102",
+            bytes32(0),
+            1e6,
+            2,
+            0.05e6,
+            1 days,
+            false
         );
         ids[3] = core.postBounty(
-            IERC20(address(cusd)), 0, repo, "github.com/yeheskieltame/claudelance/issues/103",
-            bytes32(0), 1.5e18, 1, 0.1e18, 1 days, false
+            IERC20(address(cusd)),
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/103",
+            bytes32(0),
+            1.5e18,
+            1,
+            0.1e18,
+            1 days,
+            false
         );
         ids[4] = core.postBounty(
-            IERC20(address(cusd)), 0, repo, "github.com/yeheskieltame/claudelance/issues/104",
-            bytes32(0), 0.7e18, 2, 0.05e18, 2 days, false
+            IERC20(address(cusd)),
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/104",
+            bytes32(0),
+            0.7e18,
+            2,
+            0.05e18,
+            2 days,
+            false
         );
 
         // 2 direct-hire bounties
         ids[5] = core.postDirectHire(
-            IERC20(address(cusd)), w1, 0, repo, "github.com/yeheskieltame/claudelance/issues/200",
-            bytes32(0), 2e18, 0.1e18, 1 days
+            IERC20(address(cusd)),
+            w1,
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/200",
+            bytes32(0),
+            2e18,
+            0.1e18,
+            1 days
         );
         ids[6] = core.postDirectHire(
-            IERC20(address(celo)), w2, 0, repo, "github.com/yeheskieltame/claudelance/issues/201",
-            bytes32(0), 3e18, 0.2e18, 1 days
+            IERC20(address(celo)),
+            w2,
+            0,
+            repo,
+            "github.com/yeheskieltame/claudelance/issues/201",
+            bytes32(0),
+            3e18,
+            0.2e18,
+            1 days
         );
 
         vm.stopBroadcast();
@@ -175,10 +229,18 @@ contract SeedSepoliaV2 is Script {
         core.claimSlot(ids[2]);
         core.claimSlot(ids[3]);
         core.claimSlot(ids[5]);
-        core.submitPR(ids[0], "github.com/yeheskieltame/claudelance/pull/100", bytes32(uint256(0x1)), "{\"agent\":\"w1\"}");
-        core.submitPR(ids[1], "github.com/yeheskieltame/claudelance/pull/101", bytes32(uint256(0x2)), "{\"agent\":\"w1\"}");
-        core.submitPR(ids[3], "github.com/yeheskieltame/claudelance/pull/103", bytes32(uint256(0x3)), "{\"agent\":\"w1\"}");
-        core.submitPR(ids[5], "github.com/yeheskieltame/claudelance/pull/200", bytes32(uint256(0x4)), "{\"agent\":\"w1\"}");
+        core.submitPR(
+            ids[0], "github.com/yeheskieltame/claudelance/pull/100", bytes32(uint256(0x1)), "{\"agent\":\"w1\"}"
+        );
+        core.submitPR(
+            ids[1], "github.com/yeheskieltame/claudelance/pull/101", bytes32(uint256(0x2)), "{\"agent\":\"w1\"}"
+        );
+        core.submitPR(
+            ids[3], "github.com/yeheskieltame/claudelance/pull/103", bytes32(uint256(0x3)), "{\"agent\":\"w1\"}"
+        );
+        core.submitPR(
+            ids[5], "github.com/yeheskieltame/claudelance/pull/200", bytes32(uint256(0x4)), "{\"agent\":\"w1\"}"
+        );
         vm.stopBroadcast();
 
         // W2: claim 0,2,4,6; submit on 2,4,6 — never submits on 0 (forfeit test)
@@ -187,9 +249,15 @@ contract SeedSepoliaV2 is Script {
         core.claimSlot(ids[2]);
         core.claimSlot(ids[4]);
         core.claimSlot(ids[6]);
-        core.submitPR(ids[2], "github.com/yeheskieltame/claudelance/pull/102", bytes32(uint256(0x5)), "{\"agent\":\"w2\"}");
-        core.submitPR(ids[4], "github.com/yeheskieltame/claudelance/pull/104", bytes32(uint256(0x6)), "{\"agent\":\"w2\"}");
-        core.submitPR(ids[6], "github.com/yeheskieltame/claudelance/pull/201", bytes32(uint256(0x7)), "{\"agent\":\"w2\"}");
+        core.submitPR(
+            ids[2], "github.com/yeheskieltame/claudelance/pull/102", bytes32(uint256(0x5)), "{\"agent\":\"w2\"}"
+        );
+        core.submitPR(
+            ids[4], "github.com/yeheskieltame/claudelance/pull/104", bytes32(uint256(0x6)), "{\"agent\":\"w2\"}"
+        );
+        core.submitPR(
+            ids[6], "github.com/yeheskieltame/claudelance/pull/201", bytes32(uint256(0x7)), "{\"agent\":\"w2\"}"
+        );
         vm.stopBroadcast();
     }
 

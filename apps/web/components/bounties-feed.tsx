@@ -186,18 +186,23 @@ export function BountiesFeed() {
 
 function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
   const token = normalizeToken(bounty);
+  const logoSrc = getTokenLogo(token);
   const status = normalizeStatus(bounty.status);
   const deadline = formatDeadline(bounty.deadline);
-  const amount = formatAmount(bounty.amount);
+  const amount = formatAmount(bounty.amount, token);
   const title = bounty.title ?? deriveTitle(bounty);
   const description = bounty.description ?? bounty.instructionUrl ?? "Review the linked issue for full acceptance criteria.";
-  const href = bounty.instructionUrl ?? bounty.targetRepoUrl ?? `/bounty/${bounty.id ?? ""}`;
+  const href = `/bounty/${bounty.id ?? ""}`;
 
   return (
     <article className="group flex min-h-64 flex-col rounded-2xl border border-border bg-card/80 p-5 shadow-sm backdrop-blur transition motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-glass">
       <div className="flex items-start justify-between gap-3">
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1", TOKEN_STYLES[token.toLowerCase()] ?? "bg-muted text-muted-foreground ring-border")}>
-          <Coins className="h-3.5 w-3.5" />
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1", TOKEN_STYLES[token.toLowerCase()] ?? "bg-muted text-muted-foreground ring-border")}>
+          {logoSrc ? (
+            <img src={logoSrc} alt={token} className="h-3.5 w-3.5 rounded-full object-contain" />
+          ) : (
+            <Coins className="h-3.5 w-3.5" />
+          )}
           {token}
         </span>
         <span className={cn(
@@ -217,7 +222,11 @@ function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
 
       <div className="mt-5 grid gap-2 text-sm text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <Coins className="h-4 w-4 text-foreground" />
+          {logoSrc ? (
+            <img src={logoSrc} alt={token} className="h-4 w-4 rounded-full object-contain" />
+          ) : (
+            <Coins className="h-4 w-4 text-foreground" />
+          )}
           {amount} {token}
         </span>
         <span className="inline-flex items-center gap-2">
@@ -235,7 +244,7 @@ function BountyFeedCard({ bounty }: { bounty: ApiBounty }) {
         className="mt-auto inline-flex min-h-11 items-center justify-between gap-2 pt-5 text-sm font-medium text-primary"
       >
         View bounty
-        <ExternalLink className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
       </Link>
     </article>
   );
@@ -276,12 +285,12 @@ function normalizeStatus(status: ApiBounty["status"]): BountyStatus {
   return "open";
 }
 
-function formatAmount(amount: ApiBounty["amount"]) {
+function formatAmount(amount: ApiBounty["amount"], tokenSymbol?: string) {
   if (amount === undefined || amount === null || amount === "") return "0";
   const numeric = Number(amount);
   if (!Number.isFinite(numeric)) return String(amount);
-  if (numeric > 1_000_000) return (numeric / 1e18).toLocaleString(undefined, { maximumFractionDigits: 2 });
-  return numeric.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const decimals = tokenSymbol?.toUpperCase() === "USDC" ? 6 : 18;
+  return (numeric / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 function formatDeadline(deadline: ApiBounty["deadline"]) {
@@ -309,4 +318,12 @@ function deriveTitle(bounty: ApiBounty) {
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function getTokenLogo(tokenSymbol: string) {
+  const sym = tokenSymbol.toUpperCase();
+  if (sym === "CUSD") return "/cusd-logo.png";
+  if (sym === "CELO") return "/celo-logo.png";
+  if (sym === "USDC") return "/usdc-logo.png";
+  return null;
 }

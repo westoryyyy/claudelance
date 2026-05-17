@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
       if (!matchesStatus(bounty, parsed.status)) continue;
       if (!matchesToken(bounty, parsed.token, deployment)) continue;
 
-      items.push(toJsonBounty(id, bounty));
+      items.push(toJsonBounty(id, bounty, deployment));
       if (items.length >= parsed.limit) {
         nextPageCursor = id + 1n;
         break;
@@ -221,11 +221,20 @@ function matchesToken(bounty: ChainBounty, token: TokenFilter | undefined, deplo
   return bounty.token.toLowerCase() === tokenAddress.toLowerCase();
 }
 
-function toJsonBounty(id: bigint, bounty: ChainBounty) {
+function resolveTokenSymbol(tokenAddress: string, deployment: Deployment): "cUSD" | "CELO" | "USDC" {
+  const addr = tokenAddress.toLowerCase();
+  if (addr === deployment.tokens.cUSD.toLowerCase()) return "cUSD";
+  if (addr === deployment.tokens.CELO.toLowerCase()) return "CELO";
+  return "USDC";
+}
+
+function toJsonBounty(id: bigint, bounty: ChainBounty, deployment: Deployment) {
+  const tokenSymbol = resolveTokenSymbol(bounty.token, deployment);
   return {
     id: id.toString(),
     poster: bounty.poster,
     amount: bounty.amount.toString(),
+    tokenSymbol,
     winner: bounty.winner,
     stakeRequired: bounty.stakeRequired.toString(),
     token: bounty.token,

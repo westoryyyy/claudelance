@@ -42,7 +42,9 @@ contract ClaudelanceInvariants is Test {
         actors[2] = makeAddr("a3");
         actors[3] = makeAddr("a4");
         actors[4] = makeAddr("a5");
-        for (uint256 i = 0; i < actors.length; i++) actorAddrs.push(actors[i]);
+        for (uint256 i = 0; i < actors.length; i++) {
+            actorAddrs.push(actors[i]);
+        }
 
         handler = new ClaudelanceHandler(core, cusd, identity, treasury, relayer, actors);
 
@@ -101,7 +103,9 @@ contract ClaudelanceInvariants is Test {
     function _allKnownAddresses() internal view returns (address[] memory) {
         uint256 n = actorAddrs.length;
         address[] memory addrs = new address[](n + 2);
-        for (uint256 i = 0; i < n; i++) addrs[i] = actorAddrs[i];
+        for (uint256 i = 0; i < n; i++) {
+            addrs[i] = actorAddrs[i];
+        }
         addrs[n] = treasury;
         addrs[n + 1] = relayer;
         return addrs;

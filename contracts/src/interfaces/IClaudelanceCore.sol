@@ -101,8 +101,7 @@ interface IClaudelanceCore {
     ) external returns (uint256);
 
     function claimSlot(uint256 bountyId) external;
-    function submitPR(uint256 bountyId, string calldata prUrl, bytes32 commitHash, string calldata metadata)
-        external;
+    function submitPR(uint256 bountyId, string calldata prUrl, bytes32 commitHash, string calldata metadata) external;
     function attestCI(uint256 bountyId, address worker, bool passed) external;
     function pickWinner(uint256 bountyId, address winner) external;
     function cancelExpired(uint256 bountyId) external;

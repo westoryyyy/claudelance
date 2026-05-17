@@ -70,7 +70,9 @@ contract Deploy is Script {
             console2.log("MAINNET DEPLOY -- owner must call allowToken via Safe");
         }
 
-        _writeDeployment(address(core), cusd, celo, usdc, treasury, relayer, owner, identityRegistry, reputationRegistry);
+        _writeDeployment(
+            address(core), cusd, celo, usdc, treasury, relayer, owner, identityRegistry, reputationRegistry
+        );
     }
 
     function _writeDeployment(

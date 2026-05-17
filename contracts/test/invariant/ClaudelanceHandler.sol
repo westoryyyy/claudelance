@@ -91,7 +91,9 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(poster);
         try core.postBounty(
             IERC20(address(cusd)), 0, "g/h", "g/h/i/1", bytes32(0), amount, maxSlots, stake, deadline, ciRequired
-        ) returns (uint256 id) {
+        ) returns (
+            uint256 id
+        ) {
             bountyIds.push(id);
         } catch {
             // refund accounting if the call reverts (won't actually transfer cUSD)
@@ -112,8 +114,9 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         }
         vm.prank(worker);
         try core.claimSlot(id) {
-            // success
-        } catch {
+        // success
+        }
+        catch {
             if (b.stakeRequired > 0) totalDepositedByActors -= b.stakeRequired;
         }
     }
@@ -123,7 +126,7 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         if (!ok) return;
         address worker = _actor(actorSeed);
         vm.prank(worker);
-        try core.submitPR(id, "pr", bytes32(uint256(0xabc)), "") {} catch {}
+        try core.submitPR(id, "pr", bytes32(uint256(0xabc)), "") { } catch { }
     }
 
     function attestCI(uint256 actorSeed, uint256 bountySeed, bool passed) external countCall("attestCI") {
@@ -131,7 +134,7 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         if (!ok) return;
         address worker = _actor(actorSeed);
         vm.prank(relayer);
-        try core.attestCI(id, worker, passed) {} catch {}
+        try core.attestCI(id, worker, passed) { } catch { }
     }
 
     function pickWinner(uint256 actorSeed, uint256 bountySeed) external countCall("pickWinner") {
@@ -142,13 +145,10 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         if (cs.length == 0) return;
         address winner = cs[actorSeed % cs.length];
         vm.prank(b.poster);
-        try core.pickWinner(id, winner) {} catch {}
+        try core.pickWinner(id, winner) { } catch { }
     }
 
-    function cancelExpired(uint256 actorSeed, uint256 bountySeed, uint256 warpBy)
-        external
-        countCall("cancelExpired")
-    {
+    function cancelExpired(uint256 actorSeed, uint256 bountySeed, uint256 warpBy) external countCall("cancelExpired") {
         (uint256 id, bool ok) = _bounty(bountySeed);
         if (!ok) return;
         IClaudelanceCore.Bounty memory b = core.getBounty(id);
@@ -156,13 +156,10 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         vm.warp(b.deadline + warpBy);
         address caller = _actor(actorSeed);
         vm.prank(caller);
-        try core.cancelExpired(id) {} catch {}
+        try core.cancelExpired(id) { } catch { }
     }
 
-    function settleStake(uint256 actorSeed, uint256 bountySeed, uint256 workerSeed)
-        external
-        countCall("settleStake")
-    {
+    function settleStake(uint256 actorSeed, uint256 bountySeed, uint256 workerSeed) external countCall("settleStake") {
         (uint256 id, bool ok) = _bounty(bountySeed);
         if (!ok) return;
         address[] memory cs = core.getClaimers(id);
@@ -170,7 +167,7 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         address worker = cs[workerSeed % cs.length];
         address caller = _actor(actorSeed);
         vm.prank(caller);
-        try core.settleStake(id, worker) {} catch {}
+        try core.settleStake(id, worker) { } catch { }
     }
 
     function withdrawEarnings(uint256 actorSeed) external countCall("withdrawEarnings") {
@@ -179,7 +176,7 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(who);
         try core.withdrawEarnings(IERC20(address(cusd))) {
             totalWithdrawnByActors += owed;
-        } catch {}
+        } catch { }
     }
 
     function withdrawTreasury() external countCall("withdrawTreasury") {
@@ -188,7 +185,7 @@ contract ClaudelanceHandler is CommonBase, StdCheats, StdUtils {
         vm.prank(treasury);
         try core.withdrawEarnings(IERC20(address(cusd))) {
             totalWithdrawnByActors += owed;
-        } catch {}
+        } catch { }
     }
 
     function bountyIdsLength() external view returns (uint256) {
