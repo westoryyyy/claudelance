@@ -16,7 +16,7 @@ import {
 import { AuroraBackground } from "@/components/aurora-bg";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { fetchBountyDetail, type BountyDetail, type Submission } from "@/lib/fetch-bounty-detail";
+import { type BountyDetail, type Submission } from "@/lib/fetch-bounty-detail";
 import { getTokenMeta } from "@/lib/token-meta";
 import { cn } from "@/lib/utils";
 import { BountyActionPanel } from "@/components/bounty-action-panel";
@@ -27,11 +27,26 @@ export const revalidate = 15;
 
 type Params = Promise<{ id: string }>;
 
+const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+  ? process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "")
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
+async function fetchBountyFromApi(id: string): Promise<BountyDetail | null> {
+  const response = await fetch(`${DEFAULT_BASE_URL}/api/bounty/${id}`, {
+    next: { revalidate: 15 },
+  });
+
+  if (!response.ok) return null;
+  return response.json();
+}
+
 const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
-  const bounty = await fetchBountyDetail(id);
+  const bounty = await fetchBountyFromApi(id);
   if (!bounty) return { title: "Bounty not found — Claudelance" };
 
   const repo = formatRepoName(bounty.targetRepoUrl);
@@ -45,7 +60,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function BountyDetailPage({ params }: { params: Params }) {
   const { id } = await params;
-  const bounty = await fetchBountyDetail(id);
+  const bounty = await fetchBountyFromApi(id);
   if (!bounty) notFound();
 
   const tokenMeta = getTokenMeta(bounty.tokenSymbol);
